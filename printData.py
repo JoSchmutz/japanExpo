@@ -4,25 +4,13 @@ from threading  import Thread
 from Queue      import Queue, Empty
 from subprocess import call
 import subprocess
-import binascii
 import socket
 from threading import *
-# import csv
-# from scipy.cluster.vq import kmeans2, whiten
-# from mpl_toolkits.mplot3d import Axes3D
-# from numpy import genfromtxt
-# import argparse
-# from scipy.stats.stats import pearsonr
 import time
 import signal
-#import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import numpy as np
 import pandas as pd
-# import scipy as sp
-# import heapq
-# from scipy.interpolate import UnivariateSpline
-# from scipy.interpolate import interp1d
 from scipy import signal
 import json
 from requests import *
@@ -32,27 +20,6 @@ import json
 import pprint
 import websocket
 from websocket import create_connection
-
-websocket.enableTrace(True)
-ws = create_connection('ws://192.168.1.198:8080')
-
-freqRange = 'XXII'
-# script python communication_Demo.py alpha , or ask the user which freqRange to choose
-# freqRange = input("choose between alpha, beta, gamma, delta, theta ? dont forget the \"\" ")
-
-#%matplotlib inline
-cpt = 0
-buffersize = 200 # there are 200 points for the four channels, so 1000 at all for one second (dont forget the index number)
-buffer_1 = []
-buffer_2 = []
-ind_2_remove_in_buffer1 = []
-ind_channel_1 = []
-ind_channel_2 = []
-ind_channel_3 = []
-ind_channel_4 = []
-NFFT = 200
-fs_hz = 200
-overlap = NFFT - 30
 
 
 def filter_data(data, fs_hz):
@@ -118,10 +85,9 @@ def wave_amplitude(data, fs_hz, NFFT, overlap, length, frequenciesRange):
         # print(spec_PSDperBin.shape) # from 1 to 110 Hz, step of 1Hz
 
         # take the average spectrum according to the time - axis 1
-
         bool_inds_wave_range = (freqs > wave_band_Hz[0]) & (freqs < wave_band_Hz[1])
-        #freq_range = freqs[bool_inds_wave_range == 1]
-        #freq_range = freq_range[max_range_idx]
+        # freq_range_index = freqs[bool_inds_wave_range == 1]
+        # freq_range_max = freq_range[max_range_idx]
 
         spec_PSDperBin_range = spec_PSDperBin[bool_inds_wave_range]
         mean_range[0][channel] = np.mean(spec_PSDperBin_range)
@@ -130,17 +96,12 @@ def wave_amplitude(data, fs_hz, NFFT, overlap, length, frequenciesRange):
         # max_range_idx = np.argmax(spec_PSDperBin_range)
 
     '''
-    Get the median, max and min of the 4 channels b
+    Get the median, max and min of the 4 channels
     '''
 
     med_range = np.median(mean_range[0][:])
     max_range = np.amax(mean_range[0][:])
     min_range = np.min(mean_range[0][:])
-
-    # return [med_alpha, max_alpha, min_alpha, freq_alpha,
-    #        med_beta, max_beta, min_beta, freq_beta,
-    #        med_theta, max_theta, min_theta, freq_theta,
-    #        med_gamma, max_gamma, min_gamma, freq_gamma, time_last_alpha]
 
     results = [med_range, max_range, min_range]
     result = results[0]
@@ -154,22 +115,23 @@ def enqueue_output(out, queue):
         out.flush()
         queue.put(lines)
 
+websocket.enableTrace(True)
 
-# p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-# output = p2.communicate()[0]
-process1 = Popen(['/usr/local/bin/node', 'openBCIDataStream.js'], stdout=PIPE)
-queue1 = Queue()
-thread1 = Thread(target=enqueue_output, args=(process1.stdout, queue1))
-thread1.daemon = True # kill all on exit
-thread1.start()
+ws = create_connection('ws://192.168.1.198:8080') # TOBE MODIFIED
 
-time.sleep(1)
-process2 = subprocess.Popen(['/usr/local/bin/node', 'openBCIDataStream.js'], stdout=PIPE)
-queue2 = Queue()
-thread2 = Thread(target=enqueue_output, args=(process2.stdout, queue2))
-thread2.daemon = True # kill all on exit
-thread2.start()
-
+freqRange = 'XXII'
+cpt = 0
+buffersize = 200 # there are 200 points for the four channels
+buffer_1 = []
+buffer_2 = []
+ind_2_remove_in_buffer1 = []
+ind_channel_1 = []
+ind_channel_2 = []
+ind_channel_3 = []
+ind_channel_4 = []
+NFFT = 200
+fs_hz = 200
+overlap = NFFT - 30
 cpt2 = 0
 OPB1_newMean_uv = 0
 OPB2_newMean_uv = 0
@@ -180,18 +142,30 @@ OPB2_oldMean_uv = 5E-13
 OPB1_mean_array_uv = np.array([])
 OPB2_mean_array_uv = np.array([])
 
-# the following loop saves the index of the buffer that are interesting, without the channel id every 0 [5]
+process1 = Popen(['/usr/local/bin/node', 'openBCIDataStream.js'], stdout=PIPE)
+queue1 = Queue()
+thread1 = Thread(target=enqueue_output, args=(process1.stdout, queue1))
+thread1.daemon = True # kill all on exit
+thread1.start()
+
+time.sleep(0.3)
+process2 = subprocess.Popen(['/usr/local/bin/node', 'openBCIDataStream.js'], stdout=PIPE)
+queue2 = Queue()
+thread2 = Thread(target=enqueue_output, args=(process2.stdout, queue2))
+thread2.daemon = True # kill all on exit
+thread2.start()
+
+
+# the following loop saves the index of the buffer that are interesting, without the channel index : 0 [5]
 for ind in range(0, buffersize):
-    # starts at index 0 which is the number of the sample
     ind_channel_1.append(ind*5+1)
     ind_channel_2.append(ind*5+2)
     ind_channel_3.append(ind*5+3)
     ind_channel_4.append(ind*5+4)
 
-
 while True:
     try:
-        # the first while loop builds the buffer_1 for 1 second, data are the processed by the second loop
+        # the first while loop builds the buffers for 1 second, data are then processed by the second loop
         while (cpt < buffersize*5)  :
             buffer_1.append([queue1.get_nowait()])
             buffer_2.append([queue2.get_nowait()])
@@ -231,9 +205,9 @@ while True:
             # OPB2_spread_average = np.average(OPB2_mean_array_uv[-5:-1]) # the spread_average takes the 5 last Means in the array mean_array_uv, and get the mean of them
 
             # print "OPENBCI 1 : " + freqRange + " mean for each channel: \n CHANNEL 1:  ", OPB1_result1, "    CHANNEL 2 : ", OPB1_result2, "    CHANNEL 3 : ", OPB1_result3, "    CHANNEL 4 : ", OPB1_result4
+            # print "OPENBCI 2 : " + freqRange + " mean for each channel: \n CHANNEL 1:  ", OPB2_result1, "    CHANNEL 2 : ", OPB2_result2, "    CHANNEL 3 : ", OPB2_result3, "    CHANNEL 4 : ", OPB2_result4
             ws.send(json.dumps([json.dumps({'ID': '1', 'data': {'channel1': OPB1_result1, 'channel2': OPB1_result2, 'channel3': OPB1_result3, 'channel4': OPB1_result4}} )]))
             ws.send(json.dumps([json.dumps({'ID': '2', 'data': {'channel1': OPB2_result1, 'channel2': OPB2_result2, 'channel3': OPB2_result3, 'channel4': OPB2_result4}} )]))
-            # print "OPENBCI 2 : " + freqRange + " mean for each channel: \n CHANNEL 1:  ", OPB2_result1, "    CHANNEL 2 : ", OPB2_result2, "    CHANNEL 3 : ", OPB2_result3, "    CHANNEL 4 : ", OPB2_result4
 
             cpt = 0
             # OPB1_oldMean_uv = OPB1_newMean_uv
