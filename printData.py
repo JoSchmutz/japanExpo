@@ -22,17 +22,19 @@ import websocket
 from websocket import create_connection
 from functions import *
 
-def enqueue_output(out, queue):
-    while True:
-        lines = out.readline()
-        out.flush()
-        queue.put(lines)
-
 websocket.enableTrace(True)
 
 ws = create_connection('ws://192.168.0.21:8080') # TOBE MODIFIED
+FreqRange = 'alpha'
+if FreqRange == 'alpha':
+    freqRange = np.array([8, 12])
+elif FreqRange == 'gamma':
+    freqRange = np.array([25, 50])
+elif FreqRange == 'beta':
+    freqRange = np.array([12, 25])
+elif FreqRange == 'theta':
+    freqRange = np.array([4, 7])
 
-freqRange = 'XXII'
 cpt = 0
 buffersize = 200 # there are 200 points for the four channels
 buffer_1 = []
