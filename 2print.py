@@ -66,12 +66,12 @@ ind_channel_3 = []
 ind_channel_4 = []
 NFFT = 200
 fs_hz = 200
-overlap = NFFT - 30
+#overlap = NFFT - 30
 cpt2 = 0
 OPB1_newMean_uv = 0
 #OPB2_newMean_uv = 0
 sample_number = 0
-OPB1_oldMean_uv = 5E-13
+#OPB1_oldMean_uv = 5E-13
 #OPB2_oldMean_uv = 5E-13
 OPB1_mean_array_uv = np.array([])
 #OPB2_mean_array_uv = np.array([])
@@ -103,35 +103,46 @@ thread1.start()
 
 # the following loop saves the index of the buffer that are interesting, without the channel index : 0 [5]
 for ind in range(0, buffersize):
-    ind_channel_1.append(ind*5+1)
-    ind_channel_2.append(ind*5+2)
-    ind_channel_3.append(ind*5+3)
-    ind_channel_4.append(ind*5+4)
+    ind_channel_1.append(ind*4)
+    ind_channel_2.append(ind*4+1)
+    ind_channel_3.append(ind*4+2)
+    ind_channel_4.append(ind*4+3)
 
 while True:
     try:
         # the first while loop builds the buffers for 1 second, data are then processed by the second loop
-        while (cpt < buffersize*5)  :
+        while (cpt < buffersize*4)  :
             buffer_1.append(queue1.get_nowait())
+            #print(queue1.get_nowait())
             #buffer_2.append(queue2.get_nowait())
+            #buffer_1 = filter_data(buffer_1, fs_hz)
             cpt += 1
             cpt2 = 0
 
         while cpt2 < 1 :
             #print(buffer_1)
             cpt2 += 1
-            buffer_1_array = np.asarray(buffer_1, dtype=np.float64)
+            #buffer_1_array = np.asarray(buffer_1, dtype=np.float64)
+            buffer_1_array = np.asarray(buffer_1)
+            
+            #print buffer_1_array
+            #print OPB1_data
+            #print len(buffer_1_array) #returns 800
+            #buffer_1_array.astype(np.float64)
+            #print buffer_1_array
             OPB1_data[0, :] = buffer_1_array[ind_channel_1]
+            #print OPB1_data
             OPB1_data[1, :] = buffer_1_array[ind_channel_2]
             OPB1_data[2, :] = buffer_1_array[ind_channel_3]
             OPB1_data[3, :] = buffer_1_array[ind_channel_4]
             OPB1_result = np.zeros(nb_channels)
 
-            #OPB1_result = wave_amplitude(OPB1_data_channel_1, fs_hz, NFFT, overlap, buffersize, freqRange )
+            #print OPB1_data[0,:]
             for channel in range(4):
                 OPB1_result[channel] = extract_freqbandmean(200, fs_hz, OPB1_data[channel,:], freqRange[0], freqRange[1])
 
-            ws.send( json.dumps( { 'FROM' : pyId , 'TO' : 'UNITY' , 'CMD' : 'SAVE' , 'DATA' : { 'ID' : '1' , 'CHAN1' : OPB1_result[0] , 'CHAN2' : OPB1_result[1] , 'CHAN3' : OPB1_result[2] , 'CHAN4' : OPB1_result[3] }  } ) );
+            #print(OPB1_result[0])
+            ws.send( json.dumps( { 'FROM' : pyId , 'TO' : 'UNITY' , 'CMD' : 'SAVE' , 'DATA' : { 'ID' : '2' , 'CHAN1' : OPB1_result[0] , 'CHAN2' : OPB1_result[1] , 'CHAN3' : OPB1_result[2] , 'CHAN4' : OPB1_result[3] }  } ) );
 
             #buffer_2_array = np.asarray(buffer_2, dtype=np.float64)
             #OPB2_data[0, :] = buffer_2_array[ind_channel_1]

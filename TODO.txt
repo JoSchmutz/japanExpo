@@ -1,0 +1,31 @@
+PROTOCOLE A SUIVRE
+
+Les boards sont eteintes
+debrancher tous les ports bluetooth
+
+lancer le server :
+Ouvrir une node console, 
+
+>d: & cd Livworkspace & cd japanExpo & node ws_server.js
+
+Sur une autre console node
+
+> D:
+> cd Livworkspace
+> cd japanExpo
+
+Brancher le dongle bluetooth rouge sur le port USB gauche du PC
+Allumer la Board OPENBCI, puis lancer le script
+
+> python 1print.py
+
+Sur une nouvelle console node
+> D:
+> cd Livworkspace
+> cd japanExpo
+
+Brancher le dongle bluetooth noir sur le port USB droit du PC
+Allumer la Board OPENBCI, puis lancer le script
+> python 2print.py
+
+Magic happens
